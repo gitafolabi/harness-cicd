@@ -247,7 +247,7 @@ pipeline:
                     includePipelineExecutionHistory: true
                     approvers:
                       userGroups:
-                        - account.All Account Users
+                        - _account_all_users
                       minimumCount: 1
                       disallowPipelineExecutor: false
                     approverInputs: []
