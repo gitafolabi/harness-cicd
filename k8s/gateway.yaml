@@ -24,7 +24,7 @@ spec:
         runAsUser: 1001
       containers:
         - name: gateway
-          image: <+artifact.image>
+          image: avurlerby/gateway:latest
           ports:
             - containerPort: 3001
           resources:

@@ -24,7 +24,7 @@ spec:
         runAsUser: 1001
       containers:
         - name: product-service
-          image: <+artifact.image>
+          image: avurlerby/product-service:latest
           ports:
             - containerPort: 3003
           resources:

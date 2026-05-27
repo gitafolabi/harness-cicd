@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: <+artifact.image>
+          image: avurlerby/frontend:latest
           ports:
             - containerPort: 3000
           resources:

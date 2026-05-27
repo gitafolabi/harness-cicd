@@ -29,7 +29,7 @@ spec:
               drop: [ALL]
       containers:
         - name: notification-service
-          image: <+artifact.image>
+          image: avurlerby/notification-service:latest
           resources:
             requests:
               memory: "64Mi"
