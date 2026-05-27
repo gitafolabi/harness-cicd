@@ -246,8 +246,7 @@ pipeline:
                     approvalMessage: "All 7 services built with tag <+pipeline.sequenceId>. Approve to deploy to AKS boutique namespace."
                     includePipelineExecutionHistory: true
                     approvers:
-                      userGroups:
-                        - _account_all_users
+                      userGroups: []
                       minimumCount: 1
                       disallowPipelineExecutor: false
                     approverInputs: []
