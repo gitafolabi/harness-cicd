@@ -22,7 +22,7 @@ pipeline:
             branch: main
   stages:
 
-    # ── CI: build all 7 services in parallel ──────────────────────────────
+    # CI: build all 7 services in parallel
     - parallel:
         - stage:
             identifier: ci_auth
@@ -30,12 +30,14 @@ pipeline:
             type: CI
             spec:
               cloneCodebase: true
-              platform:
-                os: Linux
-                arch: Amd64
-              runtime:
-                type: Cloud
-                spec: {}
+              infrastructure:
+                type: KubernetesDirect
+                spec:
+                  connectorRef: k8s_aks_boutique
+                  namespace: harness-delegate-ng
+                  automountServiceAccountToken: true
+                  nodeSelector: {}
+                  os: Linux
               execution:
                 steps:
                   - step:
@@ -57,12 +59,14 @@ pipeline:
             type: CI
             spec:
               cloneCodebase: true
-              platform:
-                os: Linux
-                arch: Amd64
-              runtime:
-                type: Cloud
-                spec: {}
+              infrastructure:
+                type: KubernetesDirect
+                spec:
+                  connectorRef: k8s_aks_boutique
+                  namespace: harness-delegate-ng
+                  automountServiceAccountToken: true
+                  nodeSelector: {}
+                  os: Linux
               execution:
                 steps:
                   - step:
@@ -84,12 +88,14 @@ pipeline:
             type: CI
             spec:
               cloneCodebase: true
-              platform:
-                os: Linux
-                arch: Amd64
-              runtime:
-                type: Cloud
-                spec: {}
+              infrastructure:
+                type: KubernetesDirect
+                spec:
+                  connectorRef: k8s_aks_boutique
+                  namespace: harness-delegate-ng
+                  automountServiceAccountToken: true
+                  nodeSelector: {}
+                  os: Linux
               execution:
                 steps:
                   - step:
@@ -111,12 +117,14 @@ pipeline:
             type: CI
             spec:
               cloneCodebase: true
-              platform:
-                os: Linux
-                arch: Amd64
-              runtime:
-                type: Cloud
-                spec: {}
+              infrastructure:
+                type: KubernetesDirect
+                spec:
+                  connectorRef: k8s_aks_boutique
+                  namespace: harness-delegate-ng
+                  automountServiceAccountToken: true
+                  nodeSelector: {}
+                  os: Linux
               execution:
                 steps:
                   - step:
@@ -138,12 +146,14 @@ pipeline:
             type: CI
             spec:
               cloneCodebase: true
-              platform:
-                os: Linux
-                arch: Amd64
-              runtime:
-                type: Cloud
-                spec: {}
+              infrastructure:
+                type: KubernetesDirect
+                spec:
+                  connectorRef: k8s_aks_boutique
+                  namespace: harness-delegate-ng
+                  automountServiceAccountToken: true
+                  nodeSelector: {}
+                  os: Linux
               execution:
                 steps:
                   - step:
@@ -165,12 +175,14 @@ pipeline:
             type: CI
             spec:
               cloneCodebase: true
-              platform:
-                os: Linux
-                arch: Amd64
-              runtime:
-                type: Cloud
-                spec: {}
+              infrastructure:
+                type: KubernetesDirect
+                spec:
+                  connectorRef: k8s_aks_boutique
+                  namespace: harness-delegate-ng
+                  automountServiceAccountToken: true
+                  nodeSelector: {}
+                  os: Linux
               execution:
                 steps:
                   - step:
@@ -192,12 +204,14 @@ pipeline:
             type: CI
             spec:
               cloneCodebase: true
-              platform:
-                os: Linux
-                arch: Amd64
-              runtime:
-                type: Cloud
-                spec: {}
+              infrastructure:
+                type: KubernetesDirect
+                spec:
+                  connectorRef: k8s_aks_boutique
+                  namespace: harness-delegate-ng
+                  automountServiceAccountToken: true
+                  nodeSelector: {}
+                  os: Linux
               execution:
                 steps:
                   - step:
@@ -213,7 +227,7 @@ pipeline:
                         dockerfile: projects/boutique-microservices/frontend/Dockerfile
                         context: projects/boutique-microservices/frontend
 
-    # ── Approval gate ──────────────────────────────────────────────────────
+    # Approval gate
     - stage:
         identifier: approval_prod
         name: Approve Production Deploy
@@ -237,7 +251,7 @@ pipeline:
                     approverInputs: []
         failureStrategies: []
 
-    # ── CD: deploy all services in parallel ───────────────────────────────
+    # CD: deploy all services in parallel
     - parallel:
         - stage:
             identifier: cd_auth
@@ -474,7 +488,7 @@ pipeline:
                   action:
                     type: StageRollback
 
-    # ── Gateway after the first parallel CD group ──────────────────────────
+    # Gateway after the first parallel CD group
     - stage:
         identifier: cd_gateway
         name: CD Gateway
@@ -522,7 +536,7 @@ pipeline:
               action:
                 type: StageRollback
 
-    # ── Frontend last ──────────────────────────────────────────────────────
+    # Frontend last
     - stage:
         identifier: cd_frontend
         name: CD Frontend
