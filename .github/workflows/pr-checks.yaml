@@ -1,0 +1,77 @@
+name: PR Gate
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  trivy-config-scan:
+    name: Scan K8s manifests for misconfigurations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Trivy config scan (k8s/)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: k8s/
+          format: table
+          exit-code: "1"
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+
+  lint-harness-yaml:
+    name: Lint Harness pipeline YAML
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Lint .harness/ YAML files
+        run: |
+          yamllint -d "{extends: relaxed, rules: {line-length: {max: 200}}}" .harness/
+
+  lint-dockerfiles:
+    name: Lint Dockerfiles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Hadolint – auth
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: projects/boutique-microservices/backend/services/auth/Dockerfile
+
+      - name: Hadolint – gateway
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: projects/boutique-microservices/backend/services/gateway/Dockerfile
+
+      - name: Hadolint – orders
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: projects/boutique-microservices/backend/services/orders/Dockerfile
+
+      - name: Hadolint – product-service
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: projects/boutique-microservices/backend/services/product-service/Dockerfile
+
+      - name: Hadolint – user-service
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: projects/boutique-microservices/backend/services/user-service/Dockerfile
+
+      - name: Hadolint – notification-service
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: projects/boutique-microservices/backend/services/notification-service/Dockerfile
+
+      - name: Hadolint – frontend
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: projects/boutique-microservices/frontend/Dockerfile

@@ -1,0 +1,121 @@
+name: CI – Build, Scan and Push
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "projects/**"
+      - ".github/workflows/ci.yaml"
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  build-and-push:
+    name: Build, scan and push ${{ matrix.service }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: auth
+            dockerfile: projects/boutique-microservices/backend/services/auth/Dockerfile
+            context: projects/boutique-microservices/backend/services/auth
+            image: avurlerby/auth
+          - service: gateway
+            dockerfile: projects/boutique-microservices/backend/services/gateway/Dockerfile
+            context: projects/boutique-microservices/backend/services/gateway
+            image: avurlerby/gateway
+          - service: orders
+            dockerfile: projects/boutique-microservices/backend/services/orders/Dockerfile
+            context: projects/boutique-microservices/backend/services/orders
+            image: avurlerby/orders
+          - service: product-service
+            dockerfile: projects/boutique-microservices/backend/services/product-service/Dockerfile
+            context: projects/boutique-microservices/backend/services/product-service
+            image: avurlerby/product-service
+          - service: user-service
+            dockerfile: projects/boutique-microservices/backend/services/user-service/Dockerfile
+            context: projects/boutique-microservices/backend/services/user-service
+            image: avurlerby/user-service
+          - service: notification-service
+            dockerfile: projects/boutique-microservices/backend/services/notification-service/Dockerfile
+            context: projects/boutique-microservices/backend/services/notification-service
+            image: avurlerby/notification-service
+          - service: frontend
+            dockerfile: projects/boutique-microservices/frontend/Dockerfile
+            context: projects/boutique-microservices/frontend
+            image: avurlerby/frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build image (local, not pushed yet)
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          load: true
+          tags: ${{ matrix.image }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+      - name: Trivy image scan (block on CRITICAL/HIGH)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ matrix.image }}:${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+
+      - name: Push image to Docker Hub
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ${{ matrix.image }}:${{ github.sha }}
+            ${{ matrix.image }}:latest
+          cache-from: type=gha,scope=${{ matrix.service }}
+
+  trigger-harness-cd:
+    name: Trigger Harness CD pipeline
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    steps:
+      - name: Trigger Harness CD
+        run: |
+          HTTP_STATUS=$(curl -s -o /tmp/harness_response.json -w "%{http_code}" \
+            -X POST \
+            "https://app.harness.io/gateway/pipeline/api/pipeline/execute/boutique_full_cicd?accountIdentifier=${{ secrets.HARNESS_ACCOUNT_ID }}&orgIdentifier=default&projectIdentifier=BoutiqueApp" \
+            -H "x-api-key: ${{ secrets.HARNESS_API_KEY }}" \
+            -H "Content-Type: application/yaml" \
+            --data "pipeline:
+            identifier: boutique_full_cicd
+            variables:
+              - name: imageTag
+                type: String
+                value: ${{ github.sha }}")
+
+          echo "Harness API response: $HTTP_STATUS"
+          cat /tmp/harness_response.json
+
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "Failed to trigger Harness CD pipeline"
+            exit 1
+          fi
