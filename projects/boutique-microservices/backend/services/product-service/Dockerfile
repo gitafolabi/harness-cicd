@@ -26,8 +26,7 @@ RUN npm install --production && npm cache clean --force
 COPY --from=builder /app/dist ./dist
 
 # Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nodejs -u 1001
+RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
 USER nodejs
 
