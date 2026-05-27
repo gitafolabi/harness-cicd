@@ -227,7 +227,7 @@ pipeline:
                     resources:
                       limits:
                         memory: 2Gi
-                        cpu: "1"
+                        cpu: "400m"
 
     # Approval gate
     - stage:
