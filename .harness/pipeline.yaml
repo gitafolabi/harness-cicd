@@ -1,75 +1,32 @@
-# =============================================================
-# Harness CI/CD Pipeline — Boutique Microservices
-# =============================================================
-#
-# CONCEPTS DEMONSTRATED (interview checklist):
-#   ✅ Pipeline Variables         — imageTag flows through all stages
-#   ✅ Parallel CI Stages         — all 7 services build simultaneously
-#   ✅ BuildAndPushDockerRegistry — Harness Cloud (no self-hosted runner)
-#   ✅ Manual Approval Gate       — holds before production deploy
-#   ✅ Failure Strategy           — rollback on deploy failure
-#   ✅ CD Deployment Stages       — K8s Rolling Deploy per service
-#   ✅ Stage Dependencies         — gateway deploys after auth
-#   ✅ Rollback Steps             — K8sRollingRollback auto-triggered
-#   ✅ Expressions                — <+pipeline.sequenceId>, <+input>
-#
-# HOW TO IMPORT:
-#   app.harness.io → <Project> → Deployments → Pipelines
-#   → + Create Pipeline → Import from Git
-#   Point at this file (main branch, .harness/pipeline.yaml)
-#
-# PREREQUISITES (complete in order):
-#   1. Create project "BoutiqueApp" in Harness org "default"
-#   2. Import connectors from .harness/connectors/
-#   3. Import services   from .harness/services/
-#   4. Import environment from .harness/environments/production.yaml
-#   5. Import infra def  from .harness/infrastructure/aks-boutique.yaml
-#   6. Deploy delegate   from k8s/delegate/  (needed for K8s deploys)
-#   7. Add JWT_SECRET to boutique-secrets K8s Secret in AKS
-# =============================================================
-
 pipeline:
   identifier: boutique_full_cicd
-  name: "Boutique – Full CI/CD"
+  name: Boutique Full CICD
   orgIdentifier: default
   projectIdentifier: BoutiqueApp
-  description: "Build all microservice images in parallel then rolling-deploy to AKS"
+  description: Build all microservice images in parallel then rolling-deploy to AKS
   tags:
     app: boutique
-    team: platform
-
-  # ── Pipeline-level variables ───────────────────────────────
-  # <+pipeline.sequenceId> is Harness's auto-incrementing run number.
-  # Using it as the image tag means every run produces a unique,
-  # traceable image — no "latest" ambiguity in production.
   variables:
     - name: imageTag
       type: String
-      description: "Docker image tag — defaults to pipeline run number"
+      description: Docker image tag
       value: <+pipeline.sequenceId>
-
-  # ── Codebase config (used by all CI stages) ─────────────────
   properties:
     ci:
       codebase:
         connectorRef: github_boutique
         repoName: harness-cicd
-        build: <+input>               # branch / tag / PR chosen at trigger time
-
+        build:
+          type: branch
+          spec:
+            branch: main
   stages:
 
-    # ===========================================================
-    # STAGE GROUP 1 — CI: Build & Push all services in parallel
-    # ===========================================================
-    # Each service builds independently. A failure in one does NOT
-    # block the others — Harness marks the whole parallel group
-    # failed only when all parallel stages have completed.
+    # ── CI: build all 7 services in parallel ──────────────────────────────
     - parallel:
-
-        # ── Auth ──────────────────────────────────────────────
         - stage:
             identifier: ci_auth
-            name: "CI | Auth"
+            name: CI Auth
             type: CI
             spec:
               cloneCodebase: true
@@ -77,23 +34,13 @@ pipeline:
                 os: Linux
                 arch: Amd64
               runtime:
-                type: Cloud          # Harness-hosted runner — no delegate needed
+                type: Cloud
                 spec: {}
               execution:
                 steps:
                   - step:
-                      identifier: test_auth
-                      name: Run Tests
-                      type: Run
-                      spec:
-                        shell: Sh
-                        command: |
-                          cd projects/boutique-microservices/backend/services/auth
-                          npm ci
-                          npm test || echo "⚠  No tests / tests skipped"
-                  - step:
                       identifier: push_auth
-                      name: Build & Push
+                      name: Build and Push Auth
                       type: BuildAndPushDockerRegistry
                       spec:
                         connectorRef: dockerhub_boutique
@@ -104,10 +51,9 @@ pipeline:
                         dockerfile: projects/boutique-microservices/backend/services/auth/Dockerfile
                         context: projects/boutique-microservices/backend/services/auth
 
-        # ── API Gateway ───────────────────────────────────────
         - stage:
             identifier: ci_gateway
-            name: "CI | Gateway"
+            name: CI Gateway
             type: CI
             spec:
               cloneCodebase: true
@@ -121,7 +67,7 @@ pipeline:
                 steps:
                   - step:
                       identifier: push_gateway
-                      name: Build & Push
+                      name: Build and Push Gateway
                       type: BuildAndPushDockerRegistry
                       spec:
                         connectorRef: dockerhub_boutique
@@ -132,10 +78,9 @@ pipeline:
                         dockerfile: projects/boutique-microservices/backend/services/gateway/Dockerfile
                         context: projects/boutique-microservices/backend/services/gateway
 
-        # ── Product Service ───────────────────────────────────
         - stage:
             identifier: ci_product
-            name: "CI | Product Service"
+            name: CI Product Service
             type: CI
             spec:
               cloneCodebase: true
@@ -149,7 +94,7 @@ pipeline:
                 steps:
                   - step:
                       identifier: push_product
-                      name: Build & Push
+                      name: Build and Push Product Service
                       type: BuildAndPushDockerRegistry
                       spec:
                         connectorRef: dockerhub_boutique
@@ -160,10 +105,9 @@ pipeline:
                         dockerfile: projects/boutique-microservices/backend/services/product-service/Dockerfile
                         context: projects/boutique-microservices/backend/services/product-service
 
-        # ── Orders Service ────────────────────────────────────
         - stage:
             identifier: ci_orders
-            name: "CI | Orders"
+            name: CI Orders
             type: CI
             spec:
               cloneCodebase: true
@@ -177,7 +121,7 @@ pipeline:
                 steps:
                   - step:
                       identifier: push_orders
-                      name: Build & Push
+                      name: Build and Push Orders
                       type: BuildAndPushDockerRegistry
                       spec:
                         connectorRef: dockerhub_boutique
@@ -188,10 +132,9 @@ pipeline:
                         dockerfile: projects/boutique-microservices/backend/services/orders/Dockerfile
                         context: projects/boutique-microservices/backend/services/orders
 
-        # ── User Service ──────────────────────────────────────
         - stage:
             identifier: ci_user
-            name: "CI | User Service"
+            name: CI User Service
             type: CI
             spec:
               cloneCodebase: true
@@ -205,7 +148,7 @@ pipeline:
                 steps:
                   - step:
                       identifier: push_user
-                      name: Build & Push
+                      name: Build and Push User Service
                       type: BuildAndPushDockerRegistry
                       spec:
                         connectorRef: dockerhub_boutique
@@ -216,10 +159,9 @@ pipeline:
                         dockerfile: projects/boutique-microservices/backend/services/user-service/Dockerfile
                         context: projects/boutique-microservices/backend/services/user-service
 
-        # ── Notification Service ──────────────────────────────
         - stage:
             identifier: ci_notification
-            name: "CI | Notification"
+            name: CI Notification Service
             type: CI
             spec:
               cloneCodebase: true
@@ -233,7 +175,7 @@ pipeline:
                 steps:
                   - step:
                       identifier: push_notification
-                      name: Build & Push
+                      name: Build and Push Notification Service
                       type: BuildAndPushDockerRegistry
                       spec:
                         connectorRef: dockerhub_boutique
@@ -244,10 +186,9 @@ pipeline:
                         dockerfile: projects/boutique-microservices/backend/services/notification-service/Dockerfile
                         context: projects/boutique-microservices/backend/services/notification-service
 
-        # ── Frontend ──────────────────────────────────────────
         - stage:
             identifier: ci_frontend
-            name: "CI | Frontend"
+            name: CI Frontend
             type: CI
             spec:
               cloneCodebase: true
@@ -260,18 +201,8 @@ pipeline:
               execution:
                 steps:
                   - step:
-                      identifier: build_frontend
-                      name: npm build
-                      type: Run
-                      spec:
-                        shell: Sh
-                        command: |
-                          cd projects/boutique-microservices/frontend
-                          npm ci
-                          npm run build
-                  - step:
                       identifier: push_frontend
-                      name: Build & Push nginx image
+                      name: Build and Push Frontend
                       type: BuildAndPushDockerRegistry
                       spec:
                         connectorRef: dockerhub_boutique
@@ -282,19 +213,10 @@ pipeline:
                         dockerfile: projects/boutique-microservices/frontend/Dockerfile
                         context: projects/boutique-microservices/frontend
 
-    # ===========================================================
-    # STAGE 2 — Manual Approval Gate (Production Guard)
-    # ===========================================================
-    # All 7 CI builds must succeed before this stage is reached.
-    # An approver reviews the build summary and approves or rejects.
-    # Timeout: 24h — pipeline expires if nobody approves.
-    #
-    # Interview tip: Explain that in Harness you can also use
-    # "Deployment Freeze Windows" to block deploys during change
-    # freezes (e.g. holidays) without modifying the pipeline.
+    # ── Approval gate ──────────────────────────────────────────────────────
     - stage:
         identifier: approval_prod
-        name: "Approval | Deploy to Production"
+        name: Approve Production Deploy
         type: Approval
         spec:
           execution:
@@ -305,46 +227,21 @@ pipeline:
                   type: HarnessApproval
                   timeout: 1d
                   spec:
-                    approvalMessage: |-
-                      All 7 services built successfully.
-
-                      Image tag: <+pipeline.sequenceId>
-                      Triggered by: <+pipeline.triggeredBy.name>
-
-                      Services to deploy to AKS (boutique namespace):
-                        • avurlerby/auth:<+pipeline.sequenceId>
-                        • avurlerby/gateway:<+pipeline.sequenceId>
-                        • avurlerby/product-service:<+pipeline.sequenceId>
-                        • avurlerby/orders:<+pipeline.sequenceId>
-                        • avurlerby/user-service:<+pipeline.sequenceId>
-                        • avurlerby/notification-service:<+pipeline.sequenceId>
-                        • avurlerby/frontend:<+pipeline.sequenceId>
-
-                      Please review and approve.
+                    approvalMessage: "All 7 services built with tag <+pipeline.sequenceId>. Approve to deploy to AKS boutique namespace."
                     includePipelineExecutionHistory: true
                     approvers:
                       userGroups:
-                        - account.AllUsers    # Replace with a specific Harness user group
+                        - account.All Account Users
                       minimumCount: 1
                       disallowPipelineExecutor: false
+                    approverInputs: []
+        failureStrategies: []
 
-    # ===========================================================
-    # STAGE GROUP 3 — CD: Deploy to AKS (sequential by dependency)
-    # ===========================================================
-    # Auth and leaf services deploy in parallel first.
-    # Gateway deploys after auth (depends on auth being healthy).
-    # Frontend deploys last (depends on gateway).
-    #
-    # Each CD stage uses K8sRollingDeploy with automatic rollback.
-    # The delegate in AKS applies the manifest and waits for
-    # Deployment readiness before marking the step successful.
-
-    # ── Auth & leaf services (parallel) ──────────────────────
+    # ── CD: deploy all services in parallel ───────────────────────────────
     - parallel:
-
         - stage:
             identifier: cd_auth
-            name: "CD | Auth"
+            name: CD Auth
             type: Deployment
             spec:
               deploymentType: Kubernetes
@@ -369,7 +266,7 @@ pipeline:
               execution:
                 steps:
                   - step:
-                      identifier: rolling_auth
+                      identifier: rolling_deploy_auth
                       name: Rolling Deploy
                       type: K8sRollingDeploy
                       timeout: 10m
@@ -377,10 +274,11 @@ pipeline:
                         skipDryRun: false
                 rollbackSteps:
                   - step:
-                      identifier: rollback_auth
+                      identifier: rolling_rollback_auth
                       name: Rolling Rollback
                       type: K8sRollingRollback
                       timeout: 10m
+                      spec: {}
             failureStrategies:
               - onFailure:
                   errors:
@@ -390,7 +288,7 @@ pipeline:
 
         - stage:
             identifier: cd_product
-            name: "CD | Product Service"
+            name: CD Product Service
             type: Deployment
             spec:
               deploymentType: Kubernetes
@@ -415,7 +313,7 @@ pipeline:
               execution:
                 steps:
                   - step:
-                      identifier: rolling_product
+                      identifier: rolling_deploy_product
                       name: Rolling Deploy
                       type: K8sRollingDeploy
                       timeout: 10m
@@ -423,56 +321,11 @@ pipeline:
                         skipDryRun: false
                 rollbackSteps:
                   - step:
-                      identifier: rollback_product
+                      identifier: rolling_rollback_product
                       name: Rolling Rollback
                       type: K8sRollingRollback
                       timeout: 10m
-            failureStrategies:
-              - onFailure:
-                  errors:
-                    - AllErrors
-                  action:
-                    type: StageRollback
-
-        - stage:
-            identifier: cd_user
-            name: "CD | User Service"
-            type: Deployment
-            spec:
-              deploymentType: Kubernetes
-              service:
-                serviceRef: boutique_user
-                serviceInputs:
-                  serviceDefinition:
-                    type: Kubernetes
-                    spec:
-                      artifacts:
-                        primary:
-                          primaryArtifactRef: user_docker
-                          sources:
-                            - identifier: user_docker
-                              spec:
-                                tag: <+pipeline.sequenceId>
-              environment:
-                environmentRef: boutique_production
-                deployToAll: false
-                infrastructureDefinitions:
-                  - identifier: aks_boutique
-              execution:
-                steps:
-                  - step:
-                      identifier: rolling_user
-                      name: Rolling Deploy
-                      type: K8sRollingDeploy
-                      timeout: 10m
-                      spec:
-                        skipDryRun: false
-                rollbackSteps:
-                  - step:
-                      identifier: rollback_user
-                      name: Rolling Rollback
-                      type: K8sRollingRollback
-                      timeout: 10m
+                      spec: {}
             failureStrategies:
               - onFailure:
                   errors:
@@ -482,7 +335,7 @@ pipeline:
 
         - stage:
             identifier: cd_orders
-            name: "CD | Orders"
+            name: CD Orders
             type: Deployment
             spec:
               deploymentType: Kubernetes
@@ -507,7 +360,7 @@ pipeline:
               execution:
                 steps:
                   - step:
-                      identifier: rolling_orders
+                      identifier: rolling_deploy_orders
                       name: Rolling Deploy
                       type: K8sRollingDeploy
                       timeout: 10m
@@ -515,10 +368,58 @@ pipeline:
                         skipDryRun: false
                 rollbackSteps:
                   - step:
-                      identifier: rollback_orders
+                      identifier: rolling_rollback_orders
                       name: Rolling Rollback
                       type: K8sRollingRollback
                       timeout: 10m
+                      spec: {}
+            failureStrategies:
+              - onFailure:
+                  errors:
+                    - AllErrors
+                  action:
+                    type: StageRollback
+
+        - stage:
+            identifier: cd_user
+            name: CD User Service
+            type: Deployment
+            spec:
+              deploymentType: Kubernetes
+              service:
+                serviceRef: boutique_user
+                serviceInputs:
+                  serviceDefinition:
+                    type: Kubernetes
+                    spec:
+                      artifacts:
+                        primary:
+                          primaryArtifactRef: user_docker
+                          sources:
+                            - identifier: user_docker
+                              spec:
+                                tag: <+pipeline.sequenceId>
+              environment:
+                environmentRef: boutique_production
+                deployToAll: false
+                infrastructureDefinitions:
+                  - identifier: aks_boutique
+              execution:
+                steps:
+                  - step:
+                      identifier: rolling_deploy_user
+                      name: Rolling Deploy
+                      type: K8sRollingDeploy
+                      timeout: 10m
+                      spec:
+                        skipDryRun: false
+                rollbackSteps:
+                  - step:
+                      identifier: rolling_rollback_user
+                      name: Rolling Rollback
+                      type: K8sRollingRollback
+                      timeout: 10m
+                      spec: {}
             failureStrategies:
               - onFailure:
                   errors:
@@ -528,7 +429,7 @@ pipeline:
 
         - stage:
             identifier: cd_notification
-            name: "CD | Notification"
+            name: CD Notification Service
             type: Deployment
             spec:
               deploymentType: Kubernetes
@@ -553,7 +454,7 @@ pipeline:
               execution:
                 steps:
                   - step:
-                      identifier: rolling_notification
+                      identifier: rolling_deploy_notification
                       name: Rolling Deploy
                       type: K8sRollingDeploy
                       timeout: 10m
@@ -561,10 +462,11 @@ pipeline:
                         skipDryRun: false
                 rollbackSteps:
                   - step:
-                      identifier: rollback_notification
+                      identifier: rolling_rollback_notification
                       name: Rolling Rollback
                       type: K8sRollingRollback
                       timeout: 10m
+                      spec: {}
             failureStrategies:
               - onFailure:
                   errors:
@@ -572,15 +474,11 @@ pipeline:
                   action:
                     type: StageRollback
 
-    # ── Gateway (after auth) ──────────────────────────────────
-    # Stage dependency: cd_gateway runs only when cd_auth succeeds.
-    # This mirrors the real startup requirement (gateway needs auth).
+    # ── Gateway after the first parallel CD group ──────────────────────────
     - stage:
         identifier: cd_gateway
-        name: "CD | Gateway"
+        name: CD Gateway
         type: Deployment
-        stageDependencies:
-          - cd_auth               # ← wait for auth to be healthy first
         spec:
           deploymentType: Kubernetes
           service:
@@ -604,7 +502,7 @@ pipeline:
           execution:
             steps:
               - step:
-                  identifier: rolling_gateway
+                  identifier: rolling_deploy_gateway
                   name: Rolling Deploy
                   type: K8sRollingDeploy
                   timeout: 10m
@@ -612,10 +510,11 @@ pipeline:
                     skipDryRun: false
             rollbackSteps:
               - step:
-                  identifier: rollback_gateway
+                  identifier: rolling_rollback_gateway
                   name: Rolling Rollback
                   type: K8sRollingRollback
                   timeout: 10m
+                  spec: {}
         failureStrategies:
           - onFailure:
               errors:
@@ -623,13 +522,11 @@ pipeline:
               action:
                 type: StageRollback
 
-    # ── Frontend (after gateway) ──────────────────────────────
+    # ── Frontend last ──────────────────────────────────────────────────────
     - stage:
         identifier: cd_frontend
-        name: "CD | Frontend"
+        name: CD Frontend
         type: Deployment
-        stageDependencies:
-          - cd_gateway             # ← wait for gateway first
         spec:
           deploymentType: Kubernetes
           service:
@@ -653,7 +550,7 @@ pipeline:
           execution:
             steps:
               - step:
-                  identifier: rolling_frontend
+                  identifier: rolling_deploy_frontend
                   name: Rolling Deploy
                   type: K8sRollingDeploy
                   timeout: 10m
@@ -661,33 +558,14 @@ pipeline:
                     skipDryRun: false
             rollbackSteps:
               - step:
-                  identifier: rollback_frontend
+                  identifier: rolling_rollback_frontend
                   name: Rolling Rollback
                   type: K8sRollingRollback
                   timeout: 10m
+                  spec: {}
         failureStrategies:
           - onFailure:
               errors:
                 - AllErrors
               action:
                 type: StageRollback
-
-# ── Pipeline-level trigger (optional) ─────────────────────────
-# Uncomment to auto-run on every push to main.
-# triggers:
-#   - trigger:
-#       identifier: on_push_main
-#       name: On Push to Main
-#       enabled: true
-#       source:
-#         type: Webhook
-#         spec:
-#           type: Github
-#           spec:
-#             type: Push
-#             connectorRef: github_boutique
-#             autoAbortPreviousExecutions: true
-#             payloadConditions:
-#               - key: targetBranch
-#                 operator: Equals
-#                 value: main
