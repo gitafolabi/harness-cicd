@@ -22,5 +22,5 @@ infrastructureDefinition:
   spec:
     connectorRef: k8s_aks_boutique        # references k8s-aks.yaml connector
     namespace: boutique
-    releaseName: boutique-<+infra.identifier>
+    releaseName: boutique
   allowSimultaneousDeployments: false     # prevent overlapping deploys to same infra
