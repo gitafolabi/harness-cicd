@@ -1,0 +1,33 @@
+service:
+  identifier: boutique_notification
+  name: "Boutique – Notification Service"
+  orgIdentifier: default
+  projectIdentifier: BoutiqueApp
+  serviceDefinition:
+    type: Kubernetes
+    spec:
+      manifests:
+        - manifest:
+            identifier: notification_k8s
+            type: K8sManifest
+            spec:
+              store:
+                type: Github
+                spec:
+                  connectorRef: github_boutique
+                  gitFetchType: Branch
+                  branch: main
+                  paths:
+                    - k8s/notification-service.yaml
+              skipResourceVersioning: false
+              enableDeclarativeRollback: true
+      artifacts:
+        primary:
+          primaryArtifactRef: notification_docker
+          sources:
+            - identifier: notification_docker
+              type: DockerRegistry
+              spec:
+                connectorRef: dockerhub_boutique
+                imagePath: avurlerby/notification-service
+                tag: <+input>

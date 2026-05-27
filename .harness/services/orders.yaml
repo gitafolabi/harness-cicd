@@ -1,0 +1,33 @@
+service:
+  identifier: boutique_orders
+  name: "Boutique – Orders Service"
+  orgIdentifier: default
+  projectIdentifier: BoutiqueApp
+  serviceDefinition:
+    type: Kubernetes
+    spec:
+      manifests:
+        - manifest:
+            identifier: orders_k8s
+            type: K8sManifest
+            spec:
+              store:
+                type: Github
+                spec:
+                  connectorRef: github_boutique
+                  gitFetchType: Branch
+                  branch: main
+                  paths:
+                    - k8s/orders.yaml
+              skipResourceVersioning: false
+              enableDeclarativeRollback: true
+      artifacts:
+        primary:
+          primaryArtifactRef: orders_docker
+          sources:
+            - identifier: orders_docker
+              type: DockerRegistry
+              spec:
+                connectorRef: dockerhub_boutique
+                imagePath: avurlerby/orders
+                tag: <+input>

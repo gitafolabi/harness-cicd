@@ -1,0 +1,26 @@
+# ─────────────────────────────────────────────────────────────
+# Harness Infrastructure Definition: AKS boutique namespace
+#
+# An Infrastructure Definition lives inside an Environment and
+# tells Harness exactly WHERE inside that environment to deploy:
+#   - which K8s cluster (via connector)
+#   - which namespace
+#   - the Helm release name (used for tracking / rollback)
+#
+# HOW TO IMPORT:
+#   Harness UI → Deployments → Environments → Production
+#   → Infrastructure Definitions → + New Infrastructure
+# ─────────────────────────────────────────────────────────────
+infrastructureDefinition:
+  identifier: aks_boutique
+  name: "AKS – boutique namespace"
+  orgIdentifier: default
+  projectIdentifier: BoutiqueApp
+  environmentRef: boutique_production
+  deploymentType: Kubernetes
+  type: KubernetesDirect
+  spec:
+    connectorRef: k8s_aks_boutique        # references k8s-aks.yaml connector
+    namespace: boutique
+    releaseName: boutique-<+infra.identifier>
+  allowSimultaneousDeployments: false     # prevent overlapping deploys to same infra

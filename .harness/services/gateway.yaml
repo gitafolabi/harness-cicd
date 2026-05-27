@@ -1,0 +1,33 @@
+service:
+  identifier: boutique_gateway
+  name: "Boutique – API Gateway"
+  orgIdentifier: default
+  projectIdentifier: BoutiqueApp
+  serviceDefinition:
+    type: Kubernetes
+    spec:
+      manifests:
+        - manifest:
+            identifier: gateway_k8s
+            type: K8sManifest
+            spec:
+              store:
+                type: Github
+                spec:
+                  connectorRef: github_boutique
+                  gitFetchType: Branch
+                  branch: main
+                  paths:
+                    - k8s/gateway.yaml
+              skipResourceVersioning: false
+              enableDeclarativeRollback: true
+      artifacts:
+        primary:
+          primaryArtifactRef: gateway_docker
+          sources:
+            - identifier: gateway_docker
+              type: DockerRegistry
+              spec:
+                connectorRef: dockerhub_boutique
+                imagePath: avurlerby/gateway
+                tag: <+input>

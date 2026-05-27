@@ -1,0 +1,36 @@
+# ─────────────────────────────────────────────────────────────
+# Harness GitHub Connector
+#
+# HOW TO IMPORT:
+#   Harness UI → Account/Project Settings → Connectors → New Connector
+#   OR: Settings → Resources → Connectors → + New → paste this YAML
+#
+# PREREQUISITES:
+#   1. Create a GitHub Personal Access Token (PAT) with scopes:
+#      repo, read:org, admin:repo_hook
+#   2. Store the PAT in Harness Secrets Manager as "github_pat"
+#      (Settings → Secrets → + New Secret → Text)
+#   3. Replace <YOUR_GITHUB_USERNAME> below
+# ─────────────────────────────────────────────────────────────
+connector:
+  identifier: github_boutique
+  name: "GitHub – Boutique Harness CI/CD"
+  orgIdentifier: default
+  projectIdentifier: BoutiqueApp
+  description: "GitHub connector for the harness-cicd repository"
+  type: Github
+  spec:
+    url: https://github.com/gitafolabi
+    validationRepo: harness-cicd
+    authentication:
+      type: Http
+      spec:
+        type: UsernameToken
+        spec:
+          username: <YOUR_GITHUB_USERNAME>
+          tokenRef: github_pat          # Harness secret identifier
+    apiAccess:
+      type: Token
+      spec:
+        tokenRef: github_pat
+    executeOnDelegate: false            # Uses Harness Cloud runner (no delegate needed for Git)

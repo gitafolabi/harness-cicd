@@ -1,0 +1,28 @@
+# ─────────────────────────────────────────────────────────────
+# Harness Docker Hub Connector
+#
+# HOW TO IMPORT:
+#   Harness UI → Settings → Connectors → + New Connector → Docker Registry
+#   OR paste as YAML
+#
+# PREREQUISITES:
+#   1. Create a Docker Hub Access Token (not your password):
+#      hub.docker.com → Account Settings → Security → New Access Token
+#   2. Store it in Harness Secrets Manager as "dockerhub_token"
+# ─────────────────────────────────────────────────────────────
+connector:
+  identifier: dockerhub_boutique
+  name: "Docker Hub – avurlerby"
+  orgIdentifier: default
+  projectIdentifier: BoutiqueApp
+  description: "Docker Hub connector for pushing/pulling boutique service images"
+  type: DockerRegistry
+  spec:
+    dockerRegistryUrl: https://index.docker.io/v2/
+    providerType: DockerHub
+    auth:
+      type: UsernamePassword
+      spec:
+        username: avurlerby
+        passwordRef: dockerhub_token    # Harness secret identifier
+    executeOnDelegate: false

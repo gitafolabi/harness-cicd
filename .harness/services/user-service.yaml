@@ -1,0 +1,33 @@
+service:
+  identifier: boutique_user
+  name: "Boutique – User Service"
+  orgIdentifier: default
+  projectIdentifier: BoutiqueApp
+  serviceDefinition:
+    type: Kubernetes
+    spec:
+      manifests:
+        - manifest:
+            identifier: user_k8s
+            type: K8sManifest
+            spec:
+              store:
+                type: Github
+                spec:
+                  connectorRef: github_boutique
+                  gitFetchType: Branch
+                  branch: main
+                  paths:
+                    - k8s/user-service.yaml
+              skipResourceVersioning: false
+              enableDeclarativeRollback: true
+      artifacts:
+        primary:
+          primaryArtifactRef: user_docker
+          sources:
+            - identifier: user_docker
+              type: DockerRegistry
+              spec:
+                connectorRef: dockerhub_boutique
+                imagePath: avurlerby/user-service
+                tag: <+input>

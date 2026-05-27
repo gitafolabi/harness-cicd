@@ -1,0 +1,46 @@
+# ─────────────────────────────────────────────────────────────
+# Harness Service: Auth
+#
+# A Harness Service = what you deploy. It bundles:
+#   1. Artifact Source  → Docker Hub image to deploy
+#   2. Manifests Source → K8s YAML files from Git
+#
+# Harness substitutes <+artifact.image> in k8s/auth.yaml with
+# the actual image:tag chosen at pipeline runtime.
+#
+# Replicate this file for each microservice (gateway, orders, etc.)
+# changing identifier, name, imagePath, and paths accordingly.
+# ─────────────────────────────────────────────────────────────
+service:
+  identifier: boutique_auth
+  name: "Boutique – Auth Service"
+  orgIdentifier: default
+  projectIdentifier: BoutiqueApp
+  serviceDefinition:
+    type: Kubernetes
+    spec:
+      manifests:
+        - manifest:
+            identifier: auth_k8s
+            type: K8sManifest
+            spec:
+              store:
+                type: Github
+                spec:
+                  connectorRef: github_boutique
+                  gitFetchType: Branch
+                  branch: main
+                  paths:
+                    - k8s/auth.yaml       # Only this service's manifest
+              skipResourceVersioning: false
+              enableDeclarativeRollback: true
+      artifacts:
+        primary:
+          primaryArtifactRef: auth_docker
+          sources:
+            - identifier: auth_docker
+              type: DockerRegistry
+              spec:
+                connectorRef: dockerhub_boutique
+                imagePath: avurlerby/auth
+                tag: <+input>             # Tag is provided at pipeline runtime

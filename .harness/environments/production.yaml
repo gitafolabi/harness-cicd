@@ -1,0 +1,21 @@
+# ─────────────────────────────────────────────────────────────
+# Harness Environment: Production
+#
+# An Environment represents WHERE you deploy (AKS prod cluster).
+# Type "Production" unlocks governance controls like approvals,
+# deployment freeze windows, and OPA policy enforcement.
+#
+# HOW TO IMPORT:
+#   Harness UI → Deployments → Environments → + New Environment
+#   → YAML view → paste this
+# ─────────────────────────────────────────────────────────────
+environment:
+  identifier: boutique_production
+  name: Production
+  orgIdentifier: default
+  projectIdentifier: BoutiqueApp
+  description: "AKS Production cluster – boutique namespace"
+  type: Production               # Production | PreProduction
+  tags:
+    env: production
+    cluster: aks-boutique

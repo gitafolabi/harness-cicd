@@ -1,0 +1,27 @@
+# ─────────────────────────────────────────────────────────────
+# Harness Kubernetes (AKS) Connector
+#
+# HOW TO IMPORT:
+#   Harness UI → Settings → Connectors → + New → Kubernetes Cluster
+#
+# HOW IT WORKS:
+#   Uses "Inherit from Delegate" auth — the Harness Delegate pod
+#   installed in your AKS cluster has a ServiceAccount with
+#   cluster-admin rights. Harness talks to K8s through the delegate.
+#
+# PREREQUISITES:
+#   1. Deploy the Harness Delegate to AKS first (see k8s/delegate/)
+#   2. Confirm the delegate name matches "boutique-delegate" below
+# ─────────────────────────────────────────────────────────────
+connector:
+  identifier: k8s_aks_boutique
+  name: "AKS – Boutique Cluster"
+  orgIdentifier: default
+  projectIdentifier: BoutiqueApp
+  description: "AKS cluster connector via Harness Delegate"
+  type: K8sCluster
+  spec:
+    credential:
+      type: InheritFromDelegate   # Delegate in-cluster ServiceAccount is used
+    delegateSelectors:
+      - boutique-delegate         # Must match the delegate name you registered
