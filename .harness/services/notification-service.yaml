@@ -21,7 +21,7 @@ service:
                   paths:
                     - k8s/notification-service.yaml
               skipResourceVersioning: false
-              enableDeclarativeRollback: true
+              enableDeclarativeRollback: false
       artifacts:
         primary:
           primaryArtifactRef: notification_docker

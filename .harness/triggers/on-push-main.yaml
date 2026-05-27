@@ -1,0 +1,33 @@
+trigger:
+  identifier: on_push_main
+  name: On Push to Main
+  orgIdentifier: default
+  projectIdentifier: BoutiqueApp
+  pipelineIdentifier: boutique_full_cicd
+  enabled: true
+  source:
+    type: Webhook
+    spec:
+      type: Github
+      spec:
+        type: Push
+        spec:
+          connectorRef: github_boutique
+          repoName: harness-cicd
+          autoAbortPreviousExecutions: true
+          payloadConditions:
+            - key: targetBranch
+              operator: Equals
+              value: main
+          headerConditions: []
+          actions: []
+  inputYaml: |
+    pipeline:
+      identifier: boutique_full_cicd
+      properties:
+        ci:
+          codebase:
+            build:
+              type: branch
+              spec:
+                branch: <+trigger.branch>

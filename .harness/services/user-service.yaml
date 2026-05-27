@@ -21,7 +21,7 @@ service:
                   paths:
                     - k8s/user-service.yaml
               skipResourceVersioning: false
-              enableDeclarativeRollback: true
+              enableDeclarativeRollback: false
       artifacts:
         primary:
           primaryArtifactRef: user_docker

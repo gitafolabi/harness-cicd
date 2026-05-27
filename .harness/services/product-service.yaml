@@ -21,7 +21,7 @@ service:
                   paths:
                     - k8s/product-service.yaml
               skipResourceVersioning: false
-              enableDeclarativeRollback: true
+              enableDeclarativeRollback: false
       artifacts:
         primary:
           primaryArtifactRef: product_docker

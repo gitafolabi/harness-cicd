@@ -22,7 +22,7 @@ service:
                     - k8s/frontend.yaml
                     - k8s/ingress.yaml
               skipResourceVersioning: false
-              enableDeclarativeRollback: true
+              enableDeclarativeRollback: false
       artifacts:
         primary:
           primaryArtifactRef: frontend_docker

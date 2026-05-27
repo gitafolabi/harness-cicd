@@ -21,7 +21,7 @@ service:
                   paths:
                     - k8s/gateway.yaml
               skipResourceVersioning: false
-              enableDeclarativeRollback: true
+              enableDeclarativeRollback: false
       artifacts:
         primary:
           primaryArtifactRef: gateway_docker

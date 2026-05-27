@@ -13,11 +13,7 @@ RUN npm install --production=false
 # Copy source code
 COPY . .
 
-# Build the app
-RUN npm run build
-
-# Install serve globally
-RUN npm install -g serve
+RUN npm run build && npm install -g serve@14
 
 EXPOSE 3000
 
