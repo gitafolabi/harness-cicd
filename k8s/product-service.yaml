@@ -35,10 +35,13 @@ spec:
               memory: "256Mi"
               cpu: "500m"
           securityContext:
-            readOnlyRootFilesystem: false
+            readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
             capabilities:
               drop: [ALL]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           livenessProbe:
             tcpSocket:
               port: 3003
@@ -62,6 +65,9 @@ spec:
                   key: PRODUCTS_DB_URL
             - name: OTLP_ENDPOINT
               value: "http://jaeger:4318/v1/traces"
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
