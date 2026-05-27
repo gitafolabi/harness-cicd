@@ -29,6 +29,7 @@ service:
                 spec:
                   connectorRef: github_boutique
                   gitFetchType: Branch
+                  repoName: harness-cicd
                   branch: main
                   paths:
                     - k8s/auth.yaml       # Only this service's manifest
