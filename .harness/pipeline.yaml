@@ -53,7 +53,7 @@ pipeline:
     ci:
       codebase:
         connectorRef: github_boutique
-        repoName: gitafolabi/harness-cicd
+        repoName: harness-cicd
         build: <+input>               # branch / tag / PR chosen at trigger time
 
   stages:
