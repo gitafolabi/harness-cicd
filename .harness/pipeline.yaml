@@ -262,7 +262,7 @@ pipeline:
                             - identifier: auth_docker
                               type: DockerRegistry
                               spec:
-                                tag: <+pipeline.sequenceId>
+                                tag: latest
               environment:
                 environmentRef: boutique_production
                 deployToAll: false
@@ -308,7 +308,7 @@ pipeline:
                             - identifier: product_docker
                               type: DockerRegistry
                               spec:
-                                tag: <+pipeline.sequenceId>
+                                tag: latest
               environment:
                 environmentRef: boutique_production
                 deployToAll: false
@@ -354,7 +354,7 @@ pipeline:
                             - identifier: orders_docker
                               type: DockerRegistry
                               spec:
-                                tag: <+pipeline.sequenceId>
+                                tag: latest
               environment:
                 environmentRef: boutique_production
                 deployToAll: false
@@ -400,7 +400,7 @@ pipeline:
                             - identifier: user_docker
                               type: DockerRegistry
                               spec:
-                                tag: <+pipeline.sequenceId>
+                                tag: latest
               environment:
                 environmentRef: boutique_production
                 deployToAll: false
@@ -446,7 +446,7 @@ pipeline:
                             - identifier: notification_docker
                               type: DockerRegistry
                               spec:
-                                tag: <+pipeline.sequenceId>
+                                tag: latest
               environment:
                 environmentRef: boutique_production
                 deployToAll: false
@@ -492,7 +492,7 @@ pipeline:
                         - identifier: gateway_docker
                           type: DockerRegistry
                           spec:
-                            tag: <+pipeline.sequenceId>
+                            tag: latest
           environment:
             environmentRef: boutique_production
             deployToAll: false
@@ -538,7 +538,7 @@ pipeline:
                         - identifier: frontend_docker
                           type: DockerRegistry
                           spec:
-                            tag: <+pipeline.sequenceId>
+                            tag: latest
           environment:
             environmentRef: boutique_production
             deployToAll: false
