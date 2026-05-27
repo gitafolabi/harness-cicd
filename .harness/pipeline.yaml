@@ -224,6 +224,10 @@ pipeline:
                       - latest
                     dockerfile: projects/boutique-microservices/frontend/Dockerfile
                     context: projects/boutique-microservices/frontend
+                    resources:
+                      limits:
+                        memory: 2Gi
+                        cpu: "1"
 
     # Approval gate
     - stage:
