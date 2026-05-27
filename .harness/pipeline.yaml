@@ -21,8 +21,6 @@ pipeline:
           spec:
             branch: main
   stages:
-
-    # CI: build all 7 services in parallel
     - parallel:
         - stage:
             identifier: ci_auth
@@ -52,7 +50,6 @@ pipeline:
                           - latest
                         dockerfile: projects/boutique-microservices/backend/services/auth/Dockerfile
                         context: projects/boutique-microservices/backend/services/auth
-
         - stage:
             identifier: ci_gateway
             name: CI Gateway
@@ -81,7 +78,6 @@ pipeline:
                           - latest
                         dockerfile: projects/boutique-microservices/backend/services/gateway/Dockerfile
                         context: projects/boutique-microservices/backend/services/gateway
-
         - stage:
             identifier: ci_product
             name: CI Product Service
@@ -110,7 +106,6 @@ pipeline:
                           - latest
                         dockerfile: projects/boutique-microservices/backend/services/product-service/Dockerfile
                         context: projects/boutique-microservices/backend/services/product-service
-
         - stage:
             identifier: ci_orders
             name: CI Orders
@@ -139,7 +134,6 @@ pipeline:
                           - latest
                         dockerfile: projects/boutique-microservices/backend/services/orders/Dockerfile
                         context: projects/boutique-microservices/backend/services/orders
-
         - stage:
             identifier: ci_user
             name: CI User Service
@@ -168,7 +162,6 @@ pipeline:
                           - latest
                         dockerfile: projects/boutique-microservices/backend/services/user-service/Dockerfile
                         context: projects/boutique-microservices/backend/services/user-service
-
         - stage:
             identifier: ci_notification
             name: CI Notification Service
@@ -197,7 +190,6 @@ pipeline:
                           - latest
                         dockerfile: projects/boutique-microservices/backend/services/notification-service/Dockerfile
                         context: projects/boutique-microservices/backend/services/notification-service
-
         - stage:
             identifier: ci_frontend
             name: CI Frontend
@@ -226,8 +218,6 @@ pipeline:
                           - latest
                         dockerfile: projects/boutique-microservices/frontend/Dockerfile
                         context: projects/boutique-microservices/frontend
-
-    # Approval gate
     - stage:
         identifier: approval_prod
         name: Approve Production Deploy
@@ -241,7 +231,7 @@ pipeline:
                   type: HarnessApproval
                   timeout: 1d
                   spec:
-                    approvalMessage: "All 7 services built with tag <+pipeline.sequenceId>. Approve to deploy to AKS boutique namespace."
+                    approvalMessage: All 7 services built with tag <+pipeline.sequenceId>. Approve to deploy to AKS boutique namespace.
                     includePipelineExecutionHistory: true
                     approvers:
                       userGroups:
@@ -250,8 +240,6 @@ pipeline:
                       disallowPipelineExecutor: false
                     approverInputs: []
         failureStrategies: []
-
-    # CD: deploy all services in parallel
     - parallel:
         - stage:
             identifier: cd_auth
@@ -267,9 +255,9 @@ pipeline:
                     spec:
                       artifacts:
                         primary:
-                          primaryArtifactRef: auth_docker
                           sources:
                             - identifier: auth_docker
+                              type: DockerRegistry
                               spec:
                                 tag: <+pipeline.sequenceId>
               environment:
@@ -299,7 +287,6 @@ pipeline:
                     - AllErrors
                   action:
                     type: StageRollback
-
         - stage:
             identifier: cd_product
             name: CD Product Service
@@ -314,9 +301,9 @@ pipeline:
                     spec:
                       artifacts:
                         primary:
-                          primaryArtifactRef: product_docker
                           sources:
                             - identifier: product_docker
+                              type: DockerRegistry
                               spec:
                                 tag: <+pipeline.sequenceId>
               environment:
@@ -346,7 +333,6 @@ pipeline:
                     - AllErrors
                   action:
                     type: StageRollback
-
         - stage:
             identifier: cd_orders
             name: CD Orders
@@ -361,9 +347,9 @@ pipeline:
                     spec:
                       artifacts:
                         primary:
-                          primaryArtifactRef: orders_docker
                           sources:
                             - identifier: orders_docker
+                              type: DockerRegistry
                               spec:
                                 tag: <+pipeline.sequenceId>
               environment:
@@ -393,7 +379,6 @@ pipeline:
                     - AllErrors
                   action:
                     type: StageRollback
-
         - stage:
             identifier: cd_user
             name: CD User Service
@@ -408,9 +393,9 @@ pipeline:
                     spec:
                       artifacts:
                         primary:
-                          primaryArtifactRef: user_docker
                           sources:
                             - identifier: user_docker
+                              type: DockerRegistry
                               spec:
                                 tag: <+pipeline.sequenceId>
               environment:
@@ -440,7 +425,6 @@ pipeline:
                     - AllErrors
                   action:
                     type: StageRollback
-
         - stage:
             identifier: cd_notification
             name: CD Notification Service
@@ -455,9 +439,9 @@ pipeline:
                     spec:
                       artifacts:
                         primary:
-                          primaryArtifactRef: notification_docker
                           sources:
                             - identifier: notification_docker
+                              type: DockerRegistry
                               spec:
                                 tag: <+pipeline.sequenceId>
               environment:
@@ -487,8 +471,6 @@ pipeline:
                     - AllErrors
                   action:
                     type: StageRollback
-
-    # Gateway after the first parallel CD group
     - stage:
         identifier: cd_gateway
         name: CD Gateway
@@ -503,9 +485,9 @@ pipeline:
                 spec:
                   artifacts:
                     primary:
-                      primaryArtifactRef: gateway_docker
                       sources:
                         - identifier: gateway_docker
+                          type: DockerRegistry
                           spec:
                             tag: <+pipeline.sequenceId>
           environment:
@@ -535,8 +517,6 @@ pipeline:
                 - AllErrors
               action:
                 type: StageRollback
-
-    # Frontend last
     - stage:
         identifier: cd_frontend
         name: CD Frontend
@@ -551,9 +531,9 @@ pipeline:
                 spec:
                   artifacts:
                     primary:
-                      primaryArtifactRef: frontend_docker
                       sources:
                         - identifier: frontend_docker
+                          type: DockerRegistry
                           spec:
                             tag: <+pipeline.sequenceId>
           environment:
