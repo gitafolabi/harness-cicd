@@ -21,7 +21,7 @@ service:
                   paths:
                     - k8s/orders.yaml
               skipResourceVersioning: false
-              enableDeclarativeRollback: true
+              enableDeclarativeRollback: false
       artifacts:
         primary:
           primaryArtifactRef: orders_docker

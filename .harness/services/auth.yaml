@@ -34,7 +34,7 @@ service:
                   paths:
                     - k8s/auth.yaml       # Only this service's manifest
               skipResourceVersioning: false
-              enableDeclarativeRollback: true
+              enableDeclarativeRollback: false
       artifacts:
         primary:
           primaryArtifactRef: auth_docker
