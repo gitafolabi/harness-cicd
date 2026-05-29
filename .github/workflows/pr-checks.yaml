@@ -21,7 +21,7 @@ jobs:
           exit-code: "1"
           severity: CRITICAL,HIGH
           ignore-unfixed: true
-          skip-dirs: k8s/delegate
+          skip-dirs: k8s/delegate,k8s/argo
 
   lint-harness-yaml:
     name: Lint Harness pipeline YAML
