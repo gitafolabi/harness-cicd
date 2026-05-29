@@ -48,7 +48,11 @@ jobs:
           sudo mv conftest /usr/local/bin/
 
       - name: Run OPA policies against k8s manifests
-        run: conftest test k8s/ --policy policies/ --ignore k8s/delegate --ignore k8s/argo --all-namespaces
+        run: |
+          find k8s/ -name "*.yaml" \
+            ! -path "k8s/delegate/*" \
+            ! -path "k8s/argo/*" \
+          | xargs conftest test --policy policies/
 
   lint-dockerfiles:
     name: Lint Dockerfiles
