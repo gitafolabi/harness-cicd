@@ -12,6 +12,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Cache Trivy checks DB
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/trivy
+          key: trivy-checks-${{ github.run_id }}
+          restore-keys: trivy-checks-
+
       - name: Trivy config scan (k8s/)
         uses: aquasecurity/trivy-action@master
         with:
@@ -22,6 +29,7 @@ jobs:
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           skip-dirs: k8s/delegate,k8s/argo
+          cache-dir: ~/.cache/trivy
 
   lint-harness-yaml:
     name: Lint Harness pipeline YAML
