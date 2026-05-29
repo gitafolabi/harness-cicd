@@ -89,3 +89,59 @@ deny[msg] {
     [input.metadata.name],
   )
 }
+
+# ── Rule: Deployments must define a container-level securityContext ───────────
+deny[msg] {
+  input.kind == "Deployment"
+  container := input.spec.template.spec.containers[_]
+  not container.securityContext
+  msg := sprintf(
+    "Deployment '%s': container '%s' has no securityContext. Add readOnlyRootFilesystem, allowPrivilegeEscalation: false, and capabilities.drop.",
+    [input.metadata.name, container.name],
+  )
+}
+
+# ── Rule: pod-level runAsNonRoot must be set ──────────────────────────────────
+deny[msg] {
+  input.kind == "Deployment"
+  not input.spec.template.spec.securityContext.runAsNonRoot
+  msg := sprintf(
+    "Deployment '%s': pod securityContext missing runAsNonRoot: true.",
+    [input.metadata.name],
+  )
+}
+
+# ── Rule: warn on wildcard ClusterRole/Role verbs (user-defined roles only) ───
+# Vendor manifests (k8s/delegate, k8s/argo) are excluded from scanning via
+# --ignore flags in pr-checks.yaml. This rule catches wildcard rules introduced
+# by application teams in their own manifests.
+warn[msg] {
+  input.kind == "ClusterRole"
+  rule := input.rules[_]
+  rule.verbs[_] == "*"
+  msg := sprintf(
+    "ClusterRole '%s' grants wildcard verbs ('*'). Scope to the minimum required verbs.",
+    [input.metadata.name],
+  )
+}
+
+warn[msg] {
+  input.kind == "Role"
+  rule := input.rules[_]
+  rule.verbs[_] == "*"
+  msg := sprintf(
+    "Role '%s' grants wildcard verbs ('*'). Scope to the minimum required verbs.",
+    [input.metadata.name],
+  )
+}
+
+# ── Rule: warn on wildcard resource access in ClusterRole/Role ────────────────
+warn[msg] {
+  input.kind == "ClusterRole"
+  rule := input.rules[_]
+  rule.resources[_] == "*"
+  msg := sprintf(
+    "ClusterRole '%s' grants access to all resources ('*'). Scope to specific resource types.",
+    [input.metadata.name],
+  )
+}

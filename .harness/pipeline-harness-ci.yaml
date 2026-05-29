@@ -37,7 +37,7 @@ pipeline:
             spec:
               connectorRef: k8s_aks_boutique
               namespace: harness-delegate-ng
-              automountServiceAccountToken: true
+              automountServiceAccountToken: false
               nodeSelector: {}
               os: Linux
           execution:
@@ -71,7 +71,7 @@ pipeline:
             spec:
               connectorRef: k8s_aks_boutique
               namespace: harness-delegate-ng
-              automountServiceAccountToken: true
+              automountServiceAccountToken: false
               nodeSelector: {}
               os: Linux
           execution:
@@ -105,7 +105,7 @@ pipeline:
             spec:
               connectorRef: k8s_aks_boutique
               namespace: harness-delegate-ng
-              automountServiceAccountToken: true
+              automountServiceAccountToken: false
               nodeSelector: {}
               os: Linux
           execution:
@@ -139,7 +139,7 @@ pipeline:
             spec:
               connectorRef: k8s_aks_boutique
               namespace: harness-delegate-ng
-              automountServiceAccountToken: true
+              automountServiceAccountToken: false
               nodeSelector: {}
               os: Linux
           execution:
@@ -173,7 +173,7 @@ pipeline:
             spec:
               connectorRef: k8s_aks_boutique
               namespace: harness-delegate-ng
-              automountServiceAccountToken: true
+              automountServiceAccountToken: false
               nodeSelector: {}
               os: Linux
           execution:
@@ -207,7 +207,7 @@ pipeline:
             spec:
               connectorRef: k8s_aks_boutique
               namespace: harness-delegate-ng
-              automountServiceAccountToken: true
+              automountServiceAccountToken: false
               nodeSelector: {}
               os: Linux
           execution:
@@ -241,7 +241,7 @@ pipeline:
             spec:
               connectorRef: k8s_aks_boutique
               namespace: harness-delegate-ng
-              automountServiceAccountToken: true
+              automountServiceAccountToken: false
               nodeSelector: {}
               os: Linux
           execution:

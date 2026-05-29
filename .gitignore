@@ -1,0 +1,28 @@
+# Harness GitOps agent manifest — contains generated secrets (agent token, mTLS certs).
+# Regenerate with: Harness UI → Deployments → GitOps → Agents → Generate YAML
+# Commit only the redacted placeholder version (k8s/argo/gitops-agent.yaml).
+k8s/argo/gitops-agent-live.yaml
+
+# Local env / secret files — never commit
+.env
+.env.*
+*.pem
+*.key
+*-token.txt
+kubeconfig
+kubeconfig-*
+
+# Terraform state and sensitive outputs
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars
+override.tf
+override.tf.json
+
+# SBOM outputs (uploaded as CI artifacts, not stored in repo)
+sbom-*.json
+
+# OS / editor
+.DS_Store
+*.swp
