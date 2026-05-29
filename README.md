@@ -1,6 +1,6 @@
 # Boutique Microservices – Harness CI/CD Reference Implementation
 
-A production-grade CI/CD reference for a seven-service Node.js microservices app deployed to Azure Kubernetes Service (AKS). Built as an interview and learning resource covering Harness CI/CD, GitHub Actions, ArgoCD GitOps, Terraform, secrets management, security scanning, and Kubernetes hardening.
+A production-grade CI/CD reference for a seven-service Node.js microservices app deployed to Kubernetes. Covers Harness CI/CD, GitHub Actions, ArgoCD GitOps, Terraform, secrets management, security scanning, and Kubernetes hardening. Connector examples are provided for AKS, EKS, GKE, Rancher, OpenShift, vanilla Kubernetes, and kind.
 
 ---
 
@@ -19,7 +19,7 @@ A production-grade CI/CD reference for a seven-service Node.js microservices app
 11. [Deployment Strategies](#11-deployment-strategies)
 12. [Observability](#12-observability)
 13. [DORA Metrics](#13-dora-metrics)
-14. [Interview Concepts Q&A](#14-interview-concepts-qa)
+14. [Adapting for Other Kubernetes Providers](#14-adapting-for-other-kubernetes-providers)
 
 ---
 
@@ -55,7 +55,9 @@ Developer push → GitHub PR
           └─────────┬───────────┘
                     │
                     ▼
-             AKS – boutique ns
+          Kubernetes – boutique ns
+          (AKS / EKS / GKE / Rancher
+           OpenShift / kind / vanilla)
 ```
 
 **Three-tool architecture — each tool does what it does best:**
@@ -128,20 +130,20 @@ harness-cicd/
 
 | Requirement | Notes |
 |---|---|
-| AKS cluster | 2+ nodes, Kubernetes 1.25+. See [Terraform setup](#4-infrastructure-setup) |
+| Kubernetes cluster | 2+ nodes, Kubernetes 1.25+. Any provider — AKS, EKS, GKE, Rancher, kind, etc. See [Section 14](#14-adapting-for-other-kubernetes-providers) |
 | Harness SaaS account | Free tier works. app.harness.io |
-| Docker Hub account | Images pushed to `<your-username>/` |
-| Azure Key Vault | For secrets (optional — see [Secrets Management](#9-secrets-management)) |
-| `kubectl` + `helm` | To install the Harness Delegate |
+| Container registry | Docker Hub used here; swap `dockerhub_boutique` connector for ECR, GCR, ACR, etc. |
+| Secrets backend | Azure Key Vault used here with ESO; AWS Secrets Manager, GCP Secret Manager, or HashiCorp Vault are drop-in alternatives |
+| `kubectl` + `helm` | To install the Harness Delegate into your cluster |
 | `gh` CLI | For branch protection setup |
 
 ---
 
 ## 4. Infrastructure Setup
 
-### AKS with Terraform
+### Kubernetes cluster with Terraform
 
-The cluster was provisioned using Terraform. A reference implementation is at:
+Any Kubernetes distribution works with this repo — swap the connector file for your provider (see [Section 14](#14-adapting-for-other-kubernetes-providers)). The reference cluster used here is AKS, provisioned with Terraform at:
 [github.com/gitafolabi/aks-app/tree/main/infrastructure](https://github.com/gitafolabi/aks-app/tree/main/infrastructure)
 
 Key Terraform patterns used:
@@ -666,36 +668,7 @@ Harness tracks all four DORA metrics natively under Deployments → Overview.
 
 ---
 
-## 14. Interview Concepts Q&A
-
-### What is the Harness Delegate and why is it needed?
-
-The Delegate is a worker agent running in your infrastructure. Harness SaaS sends task instructions outbound to the Delegate; the Delegate executes them (Git fetch, Docker push, K8s apply) using in-cluster permissions. Your cluster is never directly accessible from the internet. The `delegateSelector` in connectors routes specific tasks to specific Delegates — useful for multi-cluster setups where each cluster has its own Delegate.
-
-### Why sequential CI stages in Scenario A?
-
-A 2-node AKS cluster has limited CPU. Seven parallel Kaniko builds each request ~500m CPU — 3.5 CPU total. A Standard_DS2_v2 node has 2 vCPU. Parallel builds cause pods to `Pending` with `Insufficient cpu`. Sequential builds complete in ~15 min total, within cluster capacity.
-
-### Why `enableDeclarativeRollback: false`?
-
-Harness Declarative Rollback requires Harness to store the previous manifest state and manage rollback via a Git revert. On the free tier, this was unreliable and caused rollback steps to fail. Standard (imperative) rollback via `K8sRollingRollback` restores the previous ReplicaSet directly from Kubernetes — more reliable and doesn't depend on Harness SaaS storing state.
-
-### What is the difference between Trivy config scan and Trivy image scan?
-
-- `trivy config k8s/` — scans YAML files for security misconfigurations against CIS/NSA benchmarks. Runs at PR time against manifest files. Catches missing securityContext, privileged containers, host network access.
-- `trivy image avurlerby/auth:sha` — scans the built container image for known CVEs in OS packages and language libraries. Runs at CI time after build. Catches vulnerable npm packages, alpine CVEs.
-
-### How does External Secrets Operator work?
-
-ESO runs as a controller in the cluster. It reads `ExternalSecret` CRDs that map a cloud secret path (Azure Key Vault, AWS Secrets Manager, GCP Secret Manager) to a Kubernetes Secret key. On a defined sync interval (default 1 hour), ESO fetches the current value from the cloud vault and writes/updates the Kubernetes Secret. The sync is one-directional (cloud → cluster). If the Kubernetes Secret is manually edited, ESO overwrites it on the next sync.
-
-### When would you use a Harness Pipeline Template?
-
-When multiple microservice pipelines share identical stage structure. Instead of copy-pasting the rolling deploy + rollback pattern across 7 pipelines, define it once in a Stage Template with `serviceRef`, `environmentRef`, and `imageTag` as `<+input>`. Every pipeline references `templateRef: cd_rolling_deploy_stage`. Update the deploy timeout in one place; all pipelines inherit it automatically. This implements the "paved road" pattern — teams get a compliant deploy path with no effort.
-
----
-
-## 15. Adapting for Other Kubernetes Providers
+## 14. Adapting for Other Kubernetes Providers
 
 This project was built on AKS but the Harness connector model works identically on any Kubernetes distribution. The only thing that changes is **how the Delegate authenticates to the API server** and any provider-specific quirks.
 
