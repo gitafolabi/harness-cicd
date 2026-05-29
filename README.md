@@ -351,21 +351,23 @@ Four parallel jobs run on every PR to `main`. All must pass before merge is allo
 
 ```
 ┌────────────────────────────┐  ┌──────────────────────────┐
-│  Trivy config scan         │  │  OPA / Conftest           │
-│  trivy config k8s/         │  │  conftest test k8s/       │
-│  severity: CRITICAL,HIGH   │  │  --policy policies/       │
-│  skip: k8s/delegate        │  │                           │
+│  OPA / Conftest            │  │  yamllint                 │
+│  conftest test k8s/        │  │  .harness/ YAML files     │
+│  --policy policies/        │  │  max line-length: 200     │
+│  skips: delegate, argo     │  │                           │
 └────────────────────────────┘  └──────────────────────────┘
-┌────────────────────────────┐  ┌──────────────────────────┐
-│  yamllint                  │  │  hadolint                 │
-│  .harness/ YAML files      │  │  all 7 Dockerfiles        │
-│  max line-length: 200      │  │  failure-threshold: error │
-└────────────────────────────┘  └──────────────────────────┘
+┌────────────────────────────┐
+│  hadolint                  │
+│  all 7 Dockerfiles         │
+│  failure-threshold: error  │
+└────────────────────────────┘
 ```
 
-**Trivy config vs OPA — what's the difference?**
-- Trivy is a scanner — it checks against a known database of misconfigurations (CIS benchmarks, NSA/CISA K8s hardening guide)
-- OPA is policy-as-code — you write your own organisational rules in Rego. Trivy tells you about industry best-practice violations; OPA enforces your team's specific standards
+Trivy config scan (K8s YAML misconfigs) was intentionally removed from the PR gate — OPA/Conftest covers the same manifest quality checks with custom rules, and Trivy image scanning happens in the CI workflow after build. Running both in the PR gate was redundant and added ~30s of latency per PR.
+
+**OPA/Conftest vs Trivy — what's the difference?**
+- Trivy image scan (CI) — scans built container images for known CVEs in OS packages and language libraries. Runs after `docker build`.
+- OPA/Conftest (PR gate) — enforces your team's specific Kubernetes standards as code (resource limits, non-root, readOnlyRootFilesystem). Runs on YAML files before merge. You write the rules.
 
 ### CI Image Scan (`.github/workflows/ci.yaml`)
 
