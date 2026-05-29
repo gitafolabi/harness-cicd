@@ -36,6 +36,20 @@ jobs:
         run: |
           yamllint -d "{extends: relaxed, rules: {line-length: {max: 200}}}" .harness/
 
+  opa-policy-check:
+    name: OPA policy gate (k8s manifests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Conftest
+        run: |
+          curl -sL https://github.com/open-policy-agent/conftest/releases/download/v0.55.0/conftest_0.55.0_Linux_x86_64.tar.gz | tar xz
+          sudo mv conftest /usr/local/bin/
+
+      - name: Run OPA policies against k8s manifests
+        run: conftest test k8s/ --policy policies/ --ignore k8s/delegate --all-namespaces
+
   lint-dockerfiles:
     name: Lint Dockerfiles
     runs-on: ubuntu-latest

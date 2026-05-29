@@ -27,7 +27,7 @@ connector:
       spec:
         type: UsernameToken
         spec:
-          username: <YOUR_GITHUB_USERNAME>
+          username: gitafolabi
           tokenRef: github_pat          # Harness secret identifier
     apiAccess:
       type: Token

@@ -81,6 +81,15 @@ jobs:
           vuln-type: os,library
           severity: CRITICAL
 
+      - name: Generate SBOM (Syft)
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ matrix.image }}:${{ github.sha }}
+          format: cyclonedx-json
+          output-file: sbom-${{ matrix.service }}-${{ github.sha }}.json
+          upload-artifact: true
+          artifact-name: sbom-${{ matrix.service }}-${{ github.sha }}
+
       - name: Push image to Docker Hub
         uses: docker/build-push-action@v5
         with:
