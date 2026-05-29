@@ -6,23 +6,6 @@ on:
       - main
 
 jobs:
-  trivy-config-scan:
-    name: Scan K8s manifests for misconfigurations
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Trivy config scan (k8s/)
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: config
-          scan-ref: k8s/
-          format: table
-          exit-code: "1"
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
-          skip-dirs: k8s/delegate
-
   lint-harness-yaml:
     name: Lint Harness pipeline YAML
     runs-on: ubuntu-latest
@@ -35,6 +18,24 @@ jobs:
       - name: Lint .harness/ YAML files
         run: |
           yamllint -d "{extends: relaxed, rules: {line-length: {max: 200}}}" .harness/
+
+  opa-policy-check:
+    name: OPA policy gate (k8s manifests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Conftest
+        run: |
+          curl -sL https://github.com/open-policy-agent/conftest/releases/download/v0.55.0/conftest_0.55.0_Linux_x86_64.tar.gz | tar xz
+          sudo mv conftest /usr/local/bin/
+
+      - name: Run OPA policies against k8s manifests
+        run: |
+          find k8s/ -name "*.yaml" \
+            ! -path "k8s/delegate/*" \
+            ! -path "k8s/argo/*" \
+          | xargs conftest test --policy policies/
 
   lint-dockerfiles:
     name: Lint Dockerfiles

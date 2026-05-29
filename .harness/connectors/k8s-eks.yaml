@@ -1,0 +1,67 @@
+# ─────────────────────────────────────────────────────────────
+# Harness Kubernetes Connector — AWS EKS
+#
+# Two auth patterns shown; choose one.
+#
+# Pattern A (recommended): InheritFromDelegate
+#   Install the Harness Delegate as a Deployment in the EKS cluster.
+#   The Delegate's ServiceAccount gets an IAM Role via IRSA (IAM Roles
+#   for Service Accounts), so no static credentials are needed.
+#
+# Pattern B: Manual kubeconfig
+#   Store the kubeconfig as a Harness Secret and reference it here.
+#   Useful when you cannot install the Delegate inside the cluster
+#   (e.g., connecting a remote cluster from a central Delegate).
+#
+# PREREQUISITES (Pattern A — IRSA):
+#   1. Enable OIDC provider on the EKS cluster:
+#        eksctl utils associate-iam-oidc-provider --cluster <name> --approve
+#   2. Create an IAM Role with trust policy allowing the Delegate ServiceAccount:
+#        {
+#          "Effect": "Allow",
+#          "Principal": { "Federated": "arn:aws:iam::<account>:oidc-provider/..." },
+#          "Action": "sts:AssumeRoleWithWebIdentity",
+#          "Condition": {
+#            "StringEquals": {
+#              "oidc.eks.<region>.amazonaws.com/id/<id>:sub":
+#                "system:serviceaccount:harness-delegate-ng:harness-delegate"
+#            }
+#          }
+#        }
+#   3. Attach AmazonEKSClusterPolicy + AmazonEKSWorkerNodePolicy to the role
+#   4. Annotate the Delegate ServiceAccount:
+#        kubectl annotate serviceaccount harness-delegate \
+#          eks.amazonaws.com/role-arn=arn:aws:iam::<account>:role/<role> \
+#          -n harness-delegate-ng
+# ─────────────────────────────────────────────────────────────
+
+# ── Pattern A: InheritFromDelegate (IRSA) ────────────────────
+connector:
+  identifier: k8s_eks_boutique
+  name: "EKS – Boutique Cluster"
+  orgIdentifier: default
+  projectIdentifier: BoutiqueApp
+  description: "AWS EKS cluster connector via Harness Delegate with IRSA"
+  type: K8sCluster
+  spec:
+    credential:
+      type: InheritFromDelegate
+    delegateSelectors:
+      - harness-delegate          # matches the Delegate name in your EKS cluster
+
+---
+# ── Pattern B: Manual kubeconfig ─────────────────────────────
+# connector:
+#   identifier: k8s_eks_kubeconfig
+#   name: "EKS – Kubeconfig Auth"
+#   orgIdentifier: default
+#   projectIdentifier: BoutiqueApp
+#   type: K8sCluster
+#   spec:
+#     credential:
+#       type: ManualConfig
+#       manualCredentialConfig:
+#         masterUrl: https://<eks-cluster-endpoint>
+#         auth:
+#           type: ServiceAccount
+#           serviceAccountTokenRef: eks_sa_token   # Harness Secret with SA token

@@ -1,0 +1,102 @@
+# ─────────────────────────────────────────────────────────────
+# Harness Kubernetes Connector — Generic / Vanilla K8s
+#
+# Works with:
+#   - Vanilla Kubernetes (kubeadm, k3s, k0s)
+#   - Rancher (RKE / RKE2)
+#   - Kind (local development)
+#   - OpenShift (with SCC notes below)
+#   - On-prem clusters behind a firewall
+#
+# TWO patterns:
+#
+# Pattern A — InheritFromDelegate (recommended for any cluster where
+#   you can install the Delegate):
+#   The Delegate pod runs inside the cluster and inherits the permissions
+#   of its ServiceAccount. No credentials leave the cluster.
+#
+# Pattern B — kubeconfig with ServiceAccount token (for clusters where
+#   you cannot install the Delegate, or for local kind clusters):
+#   Generate a ServiceAccount token and store it as a Harness Secret.
+#
+# ── OpenShift notes ──────────────────────────────────────────
+# OpenShift enforces Security Context Constraints (SCCs) which are
+# stricter than standard Kubernetes PodSecurityAdmission.
+#
+# Issues you may hit and how to fix them:
+#
+# 1. "unable to validate against any security context constraint"
+#    The default SCC ("restricted") blocks runAsUser values not in the
+#    namespace's UID range. Fix: assign the "anyuid" SCC to the SA:
+#      oc adm policy add-scc-to-user anyuid -z harness-delegate \
+#        -n harness-delegate-ng
+#
+# 2. readOnlyRootFilesystem + OpenShift
+#    OpenShift "restricted-v2" SCC requires readOnlyRootFilesystem: true.
+#    Our manifests already set this — no change needed.
+#
+# 3. capabilities: drop: [ALL]
+#    OpenShift "restricted" SCC already drops all capabilities by default.
+#    Explicit drop: [ALL] is harmless and consistent.
+#
+# 4. Route vs Ingress
+#    OpenShift uses Routes instead of Ingress by default. If your manifests
+#    use networking.k8s.io/v1 Ingress, install the Nginx ingress controller
+#    or use an OpenShift Route object instead of k8s/ingress.yaml.
+#
+# ── Rancher notes ────────────────────────────────────────────
+# Rancher wraps standard Kubernetes — InheritFromDelegate works unchanged.
+# If using Rancher's local cluster (imported clusters), ensure the Delegate
+# has access to the downstream cluster's API server, not just the Rancher
+# management server.
+#
+# ── kind (local dev) notes ───────────────────────────────────
+# kind clusters run inside Docker. The Delegate cannot use
+# InheritFromDelegate from outside the kind network. Use Pattern B
+# (kubeconfig with SA token). Expose the API server:
+#   kind create cluster --config kind-config.yaml
+# where kind-config.yaml sets:
+#   networking:
+#     apiServerAddress: "0.0.0.0"
+#     apiServerPort: 6443
+# ─────────────────────────────────────────────────────────────
+
+# ── Pattern A: InheritFromDelegate ───────────────────────────
+connector:
+  identifier: k8s_generic
+  name: "Generic K8s Cluster"
+  orgIdentifier: default
+  projectIdentifier: BoutiqueApp
+  description: "Vanilla/Rancher/OpenShift cluster via Harness Delegate"
+  type: K8sCluster
+  spec:
+    credential:
+      type: InheritFromDelegate
+    delegateSelectors:
+      - harness-delegate
+
+---
+# ── Pattern B: kubeconfig / ServiceAccount token ─────────────
+# Steps to generate the token:
+#   kubectl create serviceaccount harness -n kube-system
+#   kubectl create clusterrolebinding harness-admin \
+#     --clusterrole=cluster-admin \
+#     --serviceaccount=kube-system:harness
+#   kubectl create token harness -n kube-system --duration=8760h \
+#     > harness-token.txt
+#   # Store the token as a Harness Secret named "k8s_sa_token"
+#
+# connector:
+#   identifier: k8s_generic_kubeconfig
+#   name: "Generic K8s – Token Auth"
+#   orgIdentifier: default
+#   projectIdentifier: BoutiqueApp
+#   type: K8sCluster
+#   spec:
+#     credential:
+#       type: ManualConfig
+#       manualCredentialConfig:
+#         masterUrl: https://<api-server-address>:6443
+#         auth:
+#           type: ServiceAccount
+#           serviceAccountTokenRef: k8s_sa_token   # Harness Secret

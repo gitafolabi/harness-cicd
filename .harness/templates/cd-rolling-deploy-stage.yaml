@@ -1,0 +1,73 @@
+template:
+  identifier: cd_rolling_deploy_stage
+  name: CD Rolling Deploy Stage
+  versionLabel: "1.0"
+  type: Stage
+  orgIdentifier: default
+  projectIdentifier: BoutiqueApp
+  description: >
+    Reusable CD stage template for a Kubernetes rolling deployment.
+    Expose serviceRef, imageTag, and environmentRef as inputs so any
+    microservice pipeline can reference this template without duplicating
+    the deploy + rollback logic.
+
+    HOW TO USE IN A PIPELINE:
+      - stage:
+          identifier: cd_myservice
+          name: CD My Service
+          template:
+            templateRef: cd_rolling_deploy_stage
+            versionLabel: "1.0"
+            templateInputs:
+              type: Deployment
+              spec:
+                service:
+                  serviceRef: <your_service_identifier>
+                  serviceInputs:
+                    serviceDefinition:
+                      type: Kubernetes
+                      spec:
+                        artifacts:
+                          primary:
+                            primaryArtifactRef: <your_artifact_identifier>
+                            sources:
+                              - identifier: <your_artifact_identifier>
+                                spec:
+                                  tag: <+pipeline.variables.imageTag>
+                environment:
+                  environmentRef: <your_environment_ref>
+                  infrastructureDefinitions:
+                    - identifier: <your_infra_identifier>
+  spec:
+    type: Deployment
+    spec:
+      deploymentType: Kubernetes
+      service:
+        serviceRef: <+input>
+        serviceInputs: <+input>
+      environment:
+        environmentRef: <+input>
+        deployToAll: false
+        infrastructureDefinitions: <+input>
+      execution:
+        steps:
+          - step:
+              identifier: rolling_deploy
+              name: Rolling Deploy
+              type: K8sRollingDeploy
+              timeout: 10m
+              spec:
+                skipDryRun: false
+        rollbackSteps:
+          - step:
+              identifier: rolling_rollback
+              name: Rolling Rollback
+              type: K8sRollingRollback
+              timeout: 10m
+              spec: {}
+    failureStrategies:
+      - onFailure:
+          errors:
+            - AllErrors
+          action:
+            type: StageRollback

@@ -1,0 +1,61 @@
+# ─────────────────────────────────────────────────────────────
+# Harness Kubernetes Connector — Google GKE
+#
+# Pattern A (recommended): InheritFromDelegate with Workload Identity
+#   The Delegate pod binds to a GCP Service Account via Workload Identity
+#   Federation — no key files, no static credentials.
+#
+# Pattern B: Service Account key (JSON)
+#   Store the GCP SA JSON key as a Harness Secret.
+#   Simpler to set up but requires key rotation.
+#
+# PREREQUISITES (Pattern A — Workload Identity):
+#   1. Enable Workload Identity on the GKE cluster:
+#        gcloud container clusters update <cluster> \
+#          --workload-pool=<project>.svc.id.goog
+#   2. Create a GCP Service Account with roles/container.developer:
+#        gcloud iam service-accounts create harness-delegate
+#        gcloud projects add-iam-policy-binding <project> \
+#          --member="serviceAccount:harness-delegate@<project>.iam.gserviceaccount.com" \
+#          --role="roles/container.developer"
+#   3. Bind the K8s ServiceAccount to the GCP SA:
+#        gcloud iam service-accounts add-iam-policy-binding \
+#          harness-delegate@<project>.iam.gserviceaccount.com \
+#          --role roles/iam.workloadIdentityUser \
+#          --member "serviceAccount:<project>.svc.id.goog[harness-delegate-ng/harness-delegate]"
+#   4. Annotate the K8s ServiceAccount:
+#        kubectl annotate serviceaccount harness-delegate \
+#          iam.gke.io/gcp-service-account=harness-delegate@<project>.iam.gserviceaccount.com \
+#          -n harness-delegate-ng
+# ─────────────────────────────────────────────────────────────
+
+# ── Pattern A: InheritFromDelegate (Workload Identity) ───────
+connector:
+  identifier: k8s_gke_boutique
+  name: "GKE – Boutique Cluster"
+  orgIdentifier: default
+  projectIdentifier: BoutiqueApp
+  description: "GKE cluster connector via Harness Delegate with Workload Identity"
+  type: K8sCluster
+  spec:
+    credential:
+      type: InheritFromDelegate
+    delegateSelectors:
+      - harness-delegate
+
+---
+# ── Pattern B: GCP Service Account key ───────────────────────
+# connector:
+#   identifier: k8s_gke_sa_key
+#   name: "GKE – Service Account Key Auth"
+#   orgIdentifier: default
+#   projectIdentifier: BoutiqueApp
+#   type: K8sCluster
+#   spec:
+#     credential:
+#       type: ManualConfig
+#       manualCredentialConfig:
+#         masterUrl: https://<gke-cluster-endpoint>
+#         auth:
+#           type: ServiceAccount
+#           serviceAccountTokenRef: gke_sa_token   # Harness Secret

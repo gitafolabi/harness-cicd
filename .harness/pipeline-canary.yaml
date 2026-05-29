@@ -1,0 +1,151 @@
+pipeline:
+  identifier: boutique_canary_gateway
+  name: Boutique Canary Deploy – Gateway
+  orgIdentifier: default
+  projectIdentifier: BoutiqueApp
+  description: >
+    Demonstrates a canary deployment strategy for the API Gateway service.
+    Flow:
+      1. Deploy 20% canary pods alongside the stable primary pods
+      2. HarnessApproval gate — reviewer validates metrics before full rollout
+      3. Promote to 100% (primary rolling deploy replaces stable)
+      4. On any failure: StageRollback tears down the canary automatically
+
+    USE CASE: High-traffic entry-point services where you want real-traffic
+    validation at small scale before full rollout. Combine with Harness SRM
+    (Continuous Verification) to replace the manual approval with metric-driven
+    auto-promotion.
+
+    PREREQUISITE: The boutique_gateway Service and aks_boutique Infrastructure
+    Definition must already exist (created by pipeline.yaml setup).
+  tags:
+    app: boutique
+    strategy: canary
+  variables:
+    - name: imageTag
+      type: String
+      description: Docker image tag (git SHA passed from GitHub Actions CI)
+      value: <+input>
+
+  stages:
+
+    # ── Phase 1: Canary (20% of pods) ─────────────────────────────────────────
+    - stage:
+        identifier: canary_gateway
+        name: Gateway – Canary Phase (20%)
+        type: Deployment
+        spec:
+          deploymentType: Kubernetes
+          service:
+            serviceRef: boutique_gateway
+            serviceInputs:
+              serviceDefinition:
+                type: Kubernetes
+                spec:
+                  artifacts:
+                    primary:
+                      primaryArtifactRef: gateway_docker
+                      sources:
+                        - identifier: gateway_docker
+                          spec:
+                            tag: <+pipeline.variables.imageTag>
+          environment:
+            environmentRef: boutique_production
+            deployToAll: false
+            infrastructureDefinitions:
+              - identifier: aks_boutique
+          execution:
+            steps:
+              - step:
+                  identifier: canary_deploy
+                  name: Canary Deploy (20%)
+                  type: K8sCanaryDeploy
+                  timeout: 10m
+                  spec:
+                    instanceSelection:
+                      type: Percentage
+                      spec:
+                        percentage: 20
+                    skipDryRun: false
+
+              # ── Optional: replace this step with a Harness SRM Continuous
+              # Verification step to auto-promote based on Prometheus/Datadog
+              # metrics instead of a manual approval.
+              - step:
+                  identifier: canary_approval
+                  name: Approve Canary Promotion
+                  type: HarnessApproval
+                  timeout: 2h
+                  spec:
+                    approvalMessage: >
+                      Gateway canary running at 20% traffic with tag <+pipeline.variables.imageTag>.
+                      Validate error rate and p99 latency in Grafana before approving full rollout.
+                    includePipelineExecutionHistory: true
+                    approvers:
+                      userGroups:
+                        - Boutique_Approvers
+                      minimumCount: 1
+                      disallowPipelineExecutor: false
+                    approverInputs: []
+
+            rollbackSteps:
+              - step:
+                  identifier: canary_rollback
+                  name: Canary Rollback
+                  type: K8sCanaryDelete
+                  timeout: 10m
+                  spec: {}
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: StageRollback
+
+    # ── Phase 2: Primary (promote to 100%) ────────────────────────────────────
+    - stage:
+        identifier: primary_gateway
+        name: Gateway – Primary Phase (100%)
+        type: Deployment
+        spec:
+          deploymentType: Kubernetes
+          service:
+            serviceRef: boutique_gateway
+            serviceInputs:
+              serviceDefinition:
+                type: Kubernetes
+                spec:
+                  artifacts:
+                    primary:
+                      primaryArtifactRef: gateway_docker
+                      sources:
+                        - identifier: gateway_docker
+                          spec:
+                            tag: <+pipeline.variables.imageTag>
+          environment:
+            environmentRef: boutique_production
+            deployToAll: false
+            infrastructureDefinitions:
+              - identifier: aks_boutique
+          execution:
+            steps:
+              - step:
+                  identifier: primary_rolling_deploy
+                  name: Primary Rolling Deploy (100%)
+                  type: K8sRollingDeploy
+                  timeout: 10m
+                  spec:
+                    skipDryRun: false
+            rollbackSteps:
+              - step:
+                  identifier: primary_rolling_rollback
+                  name: Primary Rolling Rollback
+                  type: K8sRollingRollback
+                  timeout: 10m
+                  spec: {}
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: StageRollback

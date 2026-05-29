@@ -1,17 +1,26 @@
 # ─────────────────────────────────────────────────────────────
-# Harness Kubernetes (AKS) Connector
+# Harness Kubernetes Connector — Azure AKS
 #
-# HOW TO IMPORT:
-#   Harness UI → Settings → Connectors → + New → Kubernetes Cluster
+# This file is AKS-specific. For other providers see:
+#   k8s-eks.yaml     — AWS EKS (IRSA)
+#   k8s-gke.yaml     — Google GKE (Workload Identity)
+#   k8s-generic.yaml — Vanilla K8s / Rancher / OpenShift / kind
 #
 # HOW IT WORKS:
 #   Uses "Inherit from Delegate" auth — the Harness Delegate pod
 #   installed in your AKS cluster has a ServiceAccount with
-#   cluster-admin rights. Harness talks to K8s through the delegate.
+#   cluster-admin rights. Harness SaaS sends tasks to the Delegate
+#   over an outbound HTTPS connection; your cluster is never directly
+#   exposed to the internet.
+#
+#   The Delegate's ServiceAccount can optionally be federated to an
+#   Azure AD Managed Identity via Azure Workload Identity (OIDC) so
+#   it can call Azure APIs (Key Vault, ACR) without static credentials.
 #
 # PREREQUISITES:
 #   1. Deploy the Harness Delegate to AKS first (see k8s/delegate/)
-#   2. Confirm the delegate name matches "boutique-delegate" below
+#   2. Confirm the Delegate name matches "helm-delegate" below
+#   3. Delegate pod must show "Connected" in Harness UI before pipelines run
 # ─────────────────────────────────────────────────────────────
 connector:
   identifier: k8s_aks_boutique
